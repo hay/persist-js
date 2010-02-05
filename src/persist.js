@@ -459,20 +459,6 @@ Persist = (function() {
       },
 
       methods: {
-        transaction: function(fn) {
-          var db = this.db;
-          var ret;
-
-          // begin transaction
-          db.execute('BEGIN').close();
-
-          // call callback fn
-          ret = fn.call(this, db);
-
-          // commit changes
-          db.execute('COMMIT').close();
-          return ret;
-        },
 
         init: function() {
           var db;
@@ -496,56 +482,65 @@ Persist = (function() {
           db.execute(C.sql.create).close();
         },
 
-        get: function(key, scope) {
+        get: function(key ) {
           var r, sql = C.sql.get;
+          var db = this.db;
+          var ret;
 
           // begin transaction
-          var ret = this.transaction(function (t) {
-            var is_valid, val;
-            // exec query
-            r = t.execute(sql, [key]);
+          db.execute('BEGIN').close();
 
-            // check result and get value
-            is_valid = r.isValidRow();
-            val = is_valid ? r.field(0) : null;
+          // exec query
+          r = db.execute(sql, [key]);
 
-            // close result set
-            r.close();
+          // check result and get value
+          ret = r.isValidRow() ? r.field(0) : null;
 
-            return val;
-          });
+          // close result set
+          r.close();
+
+          // commit changes
+          db.execute('COMMIT').close();
           return ret;
         },
 
-        set: function(key, val, fn, scope) {
+        set: function(key, val ) {
           var rm_sql = C.sql.remove,
               sql    = C.sql.set, r;
+          var db = this.db;
+          var ret;
 
-          // begin set transaction
-          this.transaction(function(t) {
-            // exec remove query
-            t.execute(rm_sql, [key]).close();
+          // begin transaction
+          db.execute('BEGIN').close();
 
-            // exec set query
-            t.execute(sql, [key, val]).close();
-            
-            return val;
-          });
+          // exec remove query
+          db.execute(rm_sql, [key]).close();
+
+          // exec set query
+          db.execute(sql, [key, val]).close();
+
+          // commit changes
+          db.execute('COMMIT').close();
+
           return val;
         },
 
-        remove: function(key, fn, scope) {
+        remove: function(key ) {
           var get_sql = C.sql.get;
               sql = C.sql.remove,
               r, val = null, is_valid = false;
+          var db = this.db;
 
-          // begin remove transaction
-          this.transaction(function(t) {
+          // begin transaction
+          db.execute('BEGIN').close();
 
-            // exec remove query
-            t.execute(sql, [key]).close();
-            return true;
-          });
+          // exec remove query
+          db.execute(sql, [key]).close();
+
+          // commit changes
+          db.execute('COMMIT').close();
+
+          return true;
         } 
       }
     }, 
@@ -573,14 +568,14 @@ Persist = (function() {
           this.store = globalStorage[this.o.domain];
         },
 
-        get: function(key, scope) {
+        get: function(key ) {
           // expand key
           key = this.key(key);
 
           return  this.store.getItem(key);
         },
 
-        set: function(key, val, scope) {
+        set: function(key, val ) {
           // expand key
           key = this.key(key);
 
@@ -590,7 +585,7 @@ Persist = (function() {
           return val;
         },
 
-        remove: function(key, scope) {
+        remove: function(key ) {
           var val;
 
           // expand key
@@ -629,13 +624,13 @@ Persist = (function() {
           this.store = localStorage;
         },
 
-        get: function(key, scope) {
+        get: function(key ) {
           // expand key
           key = this.key(key);
           return this.store.getItem(key);
         },
 
-        set: function(key, val, scope) {
+        set: function(key, val ) {
           // expand key
           key = this.key(key);
 
@@ -645,7 +640,7 @@ Persist = (function() {
           return val;
         },
 
-        remove: function(key, scope) {
+        remove: function(key) {
           var val;
 
           // expand key
@@ -705,7 +700,7 @@ Persist = (function() {
             this.load();
         },
 
-        get: function(key, scope) {
+        get: function(key) {
           var val;
 
           // expand key
@@ -722,7 +717,7 @@ Persist = (function() {
 
         },
 
-        set: function(key, val, scope) {
+        set: function(key, val) {
           // expand key
           key = esc(key);
           
@@ -737,7 +732,7 @@ Persist = (function() {
 
         },
 
-        remove: function(key, scope) {
+        remove: function(key ) {
           var val;
 
           // expand key
@@ -787,7 +782,7 @@ Persist = (function() {
           return this.name + B.cookie.delim + key;
         },
 
-        get: function(key, fn, scope) {
+        get: function(key, fn ) {
           var val;
           
           // expand key 
@@ -799,7 +794,7 @@ Persist = (function() {
           return val;
         },
 
-        set: function(key, val, fn, scope) {
+        set: function(key, val, fn ) {
           // expand key 
           key = this.key(key);
 
@@ -809,7 +804,7 @@ Persist = (function() {
           return val;
         },
 
-        remove: function(key, val, scope) {
+        remove: function(key, val ) {
           var val;
 
           // expand key 
@@ -872,7 +867,7 @@ Persist = (function() {
           this.el = B.flash.el;
         },
 
-        get: function(key, scope) {
+        get: function(key ) {
           var val;
 
           // escape key
@@ -884,7 +879,7 @@ Persist = (function() {
           return val;
         },
 
-        set: function(key, val, scope) {
+        set: function(key, val ) {
           var old_val;
 
           // escape key
@@ -896,7 +891,7 @@ Persist = (function() {
           return old_val;
         },
 
-        remove: function(key, scope) {
+        remove: function(key ) {
           var val;
 
           // get key
